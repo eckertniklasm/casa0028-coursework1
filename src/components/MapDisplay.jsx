@@ -1,72 +1,69 @@
 import { useState } from 'react';
 import {Map, Source, Layer, Popup} from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { plaqueData } from '../data/open-plaques-london-2023-11-10-filtered';
+import { boroughsData } from '../data/London_Boroughs';
 
 function MapDisplay(props) {
+  const [hoveredBorough, setHoveredBorough] = useState(null);
 
-  const handleMapClick = (event) => {
-    const features = event.features;
-    if (features.length) {
-        const clickedFeature = features[0];
-        props.setSelectedPlaque(clickedFeature);
+  const handleBoroughClick = (e) => {
+    if (e.features.length > 0) {
+      const feature = e.features[0];
+      props.setSelectedBorough({
+        lngLat: e.lngLat,
+        properties: feature.properties
+      });
     }
-  }
+  };
 
-  const plaqueLayerStyle = {
-      id: 'plaques-layer',
-      type: 'circle',
-      source: 'plaques-data',
-      paint: {
-          'circle-radius': 6,
-          'circle-color': '#007cbf',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-      },
-  }
   return (
     <Map
       initialViewState={{
-        longitude: props.longitude || -122.4,
-        latitude: props.latitude || 37.8,
-        zoom: props.zoom || 10
+        longitude: props.longitude || -0.1,
+        latitude: props.latitude || 51.0,
+        zoom: props.zoom || 9.5
       }}
       style={{width: '100%', height: '100%'}}
       mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-      interactiveLayerIds={['plaques-layer']}
-      onClick={handleMapClick}
-      >
-      <Source id="plaques-data" type="geojson" data={plaqueData}>
-      <Layer {...plaqueLayerStyle} />
-      </Source>
+      interactiveLayerIds={['borough-fills', 'borough-borders']}
 
-      {props.selectedPlaque && (
-        <Popup
-            anchor="bottom"
-            longitude={props.selectedPlaque.geometry.coordinates[0]}
-            latitude={props.selectedPlaque.geometry.coordinates[1]}
-            onClose={() => props.setSelectedPlaque(null)}
-        >
-            <div style={{borderRadius: '16px', padding: '4px', backgroundColor: '#ffffff', paddingTop: '28px'}}>
-                
-                <div style={{border: '4px solid #007cbf', padding: '12px', borderRadius: '12px'}}>
-                    <h2 className="text-xl font-semibold mb-2 bg-white px-2 py-1 rounded" style={{marginTop: '0px', display: 'inline-block', position: 'relative', zIndex: '10'}}>{props.selectedPlaque.properties.lead_subject_name}</h2>
-                    <p className="text-xs text-gray-600 mb-2">{props.selectedPlaque.properties.address}</p>
-                    <p className="text-xs text-blue-500 my-2"><a href={`https://openplaques.org/plaques/${props.selectedPlaque.properties.id1}`}>OpenPlaques</a></p>
-                    <p className="text-xs text-blue-500 my-2"><a href={props.selectedPlaque.properties.lead_subject_wikipedia}>Wikipedia</a></p>
-                    </div>
-                <div className="mt-4 flex" style={{borderRadius: '12px'}}>
-                    <button 
-                        className={"w-full rounded-l-sm border border-gray-200 px-3 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none disabled:pointer-events-auto disabled:opacity-50"}
-                        onClick={() => props.setIsModalOpen(true)}
-                    >Recommended Reading</button>
-                
-                </div>
-            </div>
-    </Popup>
-)}
+      onMouseMove={(e) => {
+        const feature = e.features?.[0] || null;
+        setHoveredBorough(feature);
+      }}
+      
+      onMouseLeave={() => setHoveredBorough(null)}
+
+      onClick={handleBoroughClick}
+      >
+      <Source id="london-boroughs" type="geojson" data={boroughsData}>
+        {/* Fill layer for boroughs */}
+        <Layer
+          id="borough-fills"
+          type="fill"
+          paint={{'fill-color': '#ffffff','fill-opacity': ['case',['boolean', ['feature-state', 'hover'], false],0.7,0.3]
+          }}
+        />
+        {/* Border layer for boroughs */}
+        <Layer
+          id="borough-borders"
+          type="line"
+          paint={{'line-color': '#333333','line-width': 2}}
+        />
+        {/* Symbol layer for borough names */}
+        {/* <Layer
+          id="borough-labels"
+          type="symbol"
+          layout={{'text-field': ['get', 'BOROUGH'],'text-size': 12,'text-offset': [0, 0],'text-anchor': 'center'}}
+          paint={{'text-color': '#333333','text-halo-color': '#ffffff','text-halo-width': 1}}
+        /> */}
+      </Source>
+      {hoveredBorough?.properties?.BOROUGH && (
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-2 rounded-md shadow text-sm font-semibold text-gray-900">
+          {hoveredBorough.properties.BOROUGH}
+        </div>
+      )}
     </Map>
   );
 }
-
 export default MapDisplay;

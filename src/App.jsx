@@ -1,21 +1,26 @@
 import { useState } from 'react'
 import TitleBar from './components/TitleBar'
 import MapDisplay from './components/MapDisplay'
+import Statistics from './components/Statistics'
 import './tw-styles.css'
-import PlaqueModal from './components/PlaqueModal'
+import Footer from './components/Footer'
 
 function App() {
-
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const [selectedPlaque, setSelectedPlaque] = useState(null);
+  const [selectedBorough, setSelectedBorough] = useState(null);
 
   return (
-    <div className="mx-auto max-w-screen-xl h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <TitleBar title="Recommended Reading" />
-      <MapDisplay longitude={-0.137310} latitude={51.521699} selectedPlaque={selectedPlaque} setSelectedPlaque={setSelectedPlaque} setIsModalOpen={setIsModalOpen} />
-      {isModalOpen ? <PlaqueModal setIsModalOpen={setIsModalOpen} selectedPlaque={selectedPlaque} /> : null}
-  </div>
+    <div className="mx-auto max-w-screen-xl h-screen bg-white flex flex-col overflow-hidden">
+      <TitleBar title="London Housing Over the Years" />
+      <div className="flex flex-1 gap-4 p-4 overflow-hidden">
+        {/* Map Section - 2/3 width */}
+        <div className="w-2/3 rounded-lg overflow-hidden shadow-lg">
+          <MapDisplay longitude={-0.1} latitude={51.48} selectedBorough={selectedBorough} setSelectedBorough={setSelectedBorough} />
+        </div>
+        {/* Statistics Section - 1/3 width */}
+        <Statistics selectedBorough={selectedBorough} />
+      </div>
+      <Footer />
+    </div>
   )
 }
 
