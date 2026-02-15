@@ -1,10 +1,71 @@
-import { useState } from 'react';
-import {Map, Source, Layer, Popup} from 'react-map-gl/maplibre';
+import { useState, useMemo } from 'react';
+import MapGL, { Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { boroughsData } from '../data/London_Boroughs';
+import populationData from '../data/ons-mye-population-totals.js';
 
 function MapDisplay(props) {
   const [hoveredBorough, setHoveredBorough] = useState(null);
+
+  const boroughsWithPop = useMemo(() => {
+    if (!Array.isArray(populationData) || populationData.length === 0) return boroughsData;
+
+    // Year to use
+    const year = String(props.selectedYear ?? 2015);
+
+    // Build lookup: area name -> numeric population for the chosen year
+    const popLookup = new Map();
+    populationData.forEach((row) => {
+      const area = row['Area name']?.trim();
+      if (!area) return;
+      const valueRaw = row[year];
+      if (valueRaw === undefined || valueRaw === null) return;
+      const numeric = Number(String(valueRaw).replace(/[’']/g, '').replace(/,/g, ''));
+      if (Number.isNaN(numeric)) return;
+      popLookup.set(area, numeric);
+    });
+
+    // Clone GeoJSON and attach POP2015 property where available
+    const copy = JSON.parse(JSON.stringify(boroughsData));
+    copy.features.forEach((f) => {
+      const area = (f.properties?.BOROUGH || f.properties?.NAME || f.properties?.name || '').trim();
+      const pop = popLookup.get(area);
+      f.properties = f.properties || {};
+      f.properties.POP2015 = typeof pop === 'number' ? pop : null;
+    });
+
+    return copy;
+  }, [props.selectedYear]);
+
+  const colorExpression = useMemo(() => {
+    // compute min/max across features
+    const values = (boroughsWithPop.features || [])
+      .map((f) => f.properties?.POP2015)
+      .filter((v) => typeof v === 'number');
+    if (values.length === 0) return '#eeeeee';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    if (min === max) {
+      // single color for all
+      return ['case', ['==', ['get', 'POP2015'], null], '#f0f0f0', '#08306b'];
+    }
+
+    // interpolate from light to dark blue
+    return [
+      'interpolate', ['linear'], ['coalesce', ['get', 'POP2015'], 0],
+      min, '#f7fbff',
+      max, '#08306b'
+    ];
+  }, [boroughsWithPop]);
+
+  const minMax = useMemo(() => {
+    const values = (boroughsWithPop.features || [])
+      .map((f) => f.properties?.POP2015)
+      .filter((v) => typeof v === 'number');
+    if (values.length === 0) return null;
+    return { min: Math.min(...values), max: Math.max(...values) };
+  }, [boroughsWithPop]);
 
   const handleBoroughClick = (e) => {
     if (e.features.length > 0) {
@@ -17,11 +78,11 @@ function MapDisplay(props) {
   };
 
   return (
-    <Map
+    <MapGL
       initialViewState={{
         longitude: props.longitude || -0.1,
         latitude: props.latitude || 51.0,
-        zoom: props.zoom || 9.5
+        zoom: props.zoom || 9.0
       }}
       style={{width: '100%', height: '100%'}}
       mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
@@ -36,12 +97,14 @@ function MapDisplay(props) {
 
       onClick={handleBoroughClick}
       >
-      <Source id="london-boroughs" type="geojson" data={boroughsData}>
+      <Source id="london-boroughs" type="geojson" data={boroughsWithPop}>
         {/* Fill layer for boroughs */}
         <Layer
           id="borough-fills"
           type="fill"
-          paint={{'fill-color': '#ffffff','fill-opacity': ['case',['boolean', ['feature-state', 'hover'], false],0.7,0.3]
+          paint={{
+            'fill-color': colorExpression,
+            'fill-opacity': ['case',['boolean', ['feature-state', 'hover'], false],0.8,0.6]
           }}
         />
         {/* Border layer for boroughs */}
@@ -63,7 +126,21 @@ function MapDisplay(props) {
           {hoveredBorough.properties.BOROUGH}
         </div>
       )}
-    </Map>
+      {/* Color bar legend at bottom center */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 bottom-16 z-50 pointer-events-auto">
+        <div className="bg-white/90 backdrop-blur px-3 py-2 rounded-md shadow flex items-center space-x-3">
+          {minMax ? (
+            <>
+              <span className="text-xs text-gray-600">{minMax.min.toLocaleString()}</span>
+              <div className="w-48 h-3 rounded" style={{ background: 'linear-gradient(90deg, #f7fbff, #08306b)' }} />
+              <span className="text-xs text-gray-600">{minMax.max.toLocaleString()}</span>
+            </>
+          ) : (
+            <span className="text-xs text-gray-600">No population data</span>
+          )}
+        </div>
+      </div>
+    </MapGL>
   );
 }
 export default MapDisplay;

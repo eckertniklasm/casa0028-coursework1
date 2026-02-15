@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import populationData from "../data/ons-mye-population-totals.js";
+import Barchart from './barchart';
+import YearSelect from "./SelectYear.jsx";
 
 function Statistics(props) {
   // Selected borough area from GeoJSON
@@ -7,15 +9,12 @@ function Statistics(props) {
   const hectaresDisplay =
     typeof hectares === "number" ? hectares.toLocaleString() : "—";
 
-  const { populationByArea, populationYearLabel, populationSeriesByArea, yearKeys } =
-    useMemo(() => {
+  const { populationByArea, populationYearLabel } = useMemo(() => {
     // Build a lookup map once: borough name -> latest population value
     if (!Array.isArray(populationData) || populationData.length === 0) {
       return {
         populationByArea: new Map(),
         populationYearLabel: "",
-        populationSeriesByArea: new Map(),
-        yearKeys: [],
       };
     }
 
@@ -28,40 +27,27 @@ function Statistics(props) {
       return {
         populationByArea: new Map(),
         populationYearLabel: "",
-        populationSeriesByArea: new Map(),
-        yearKeys: [],
       };
     }
 
     const map = new Map();
-    const seriesMap = new Map();
     populationData.forEach((row) => {
       const area = row["Area name"]?.trim();
       if (!area) return;
 
-      const series = yearKeys.map((year) => {
-        const valueRaw = row[year];
-        if (valueRaw === undefined || valueRaw === null) return null;
-        const numeric = Number(
-          String(valueRaw).replace(/[’']/g, "").replace(/,/g, "")
-        );
-        return Number.isNaN(numeric) ? null : numeric;
-      });
+      const valueRaw = row[latestYear];
+      if (valueRaw === undefined || valueRaw === null) return;
+      const numeric = Number(
+        String(valueRaw).replace(/[’']/g, "").replace(/,/g, "")
+      );
+      if (Number.isNaN(numeric)) return;
 
-      seriesMap.set(area, series);
-
-      const latestValue = series.at(-1);
-      if (typeof latestValue !== "number") return;
-
-      // Normalize values like 123’456 into a usable number
-      map.set(area, latestValue);
+      map.set(area, numeric);
     });
 
     return {
       populationByArea: map,
       populationYearLabel: latestYear,
-      populationSeriesByArea: seriesMap,
-      yearKeys,
     };
   }, []);
 
@@ -71,45 +57,7 @@ function Statistics(props) {
   const populationDisplay =
     typeof population === "number" ? population.toLocaleString() : "—";
 
-  // Retrieve the full year-by-year series for the selected borough
-  const populationSeries = boroughName
-    ? populationSeriesByArea.get(boroughName)
-    : null;
-
-  const populationSeriesValues = Array.isArray(populationSeries)
-    ? populationSeries
-    : [];
-
-  const numericSeries = populationSeriesValues.filter(
-    (value) => typeof value === "number"
-  );
-
-  // Prepare a simple line chart from the series values
-  const hasSeries = numericSeries.length > 1;
-  const seriesMin = Math.min(...numericSeries);
-  const seriesMax = Math.max(...numericSeries);
-  const seriesRange = seriesMax - seriesMin || 1;
-  const chartWidth = 320;
-  const chartHeight = 120;
-  const chartPadding = 12;
-  const chartInnerWidth = chartWidth - chartPadding * 2;
-  const chartInnerHeight = chartHeight - chartPadding * 2;
-  const chartStep = populationSeriesValues.length > 1
-    ? chartInnerWidth / (populationSeriesValues.length - 1)
-    : 0;
-  const chartPoints = hasSeries
-    ? populationSeriesValues
-        .map((value, index) => {
-          if (typeof value !== "number") return null;
-          const x = chartPadding + index * chartStep;
-          const y =
-            chartPadding +
-            chartInnerHeight * (1 - (value - seriesMin) / seriesRange);
-          return `${x},${y}`;
-        })
-        .filter(Boolean)
-        .join(" ")
-    : "";
+  // Series/chart logic removed
 
   const populationLabel = populationYearLabel
     ? `Population (${populationYearLabel})`
@@ -119,7 +67,6 @@ function Statistics(props) {
     <div className="w-1/3 bg-white rounded-lg shadow-lg p-6 overflow-y-auto">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Statistics for {boroughName}</h2>
       <div className="space-y-4">
-        {/* Statistics placeholders */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-gray-600 text-sm">Area (ha)</p>
           <p className="text-2xl font-bold text-gray-900">
@@ -134,33 +81,23 @@ function Statistics(props) {
         </div>
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-gray-600 text-sm">Population over time</p>
-          {hasSeries ? (
             <div className="mt-3">
-              <svg
-                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                className="w-full h-28"
-                role="img"
-                aria-label="Population change over time"
-              >
-                <polyline
-                  points={chartPoints}
-                  fill="none"
-                  stroke="#000000"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{yearKeys[0]}</span>
-                <span>{yearKeys[yearKeys.length - 1]}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 mt-2">
-              Select a borough to view the time series.
-            </p>
-          )}
+            <Barchart selectedBorough={props.selectedBorough}/>
+          </div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-gray-600 text-sm">Select Year</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {props.selectedYear}
+          </p>
+          <div className="text-2xl font-bold text-gray-900">
+            <YearSelect
+              yearRange={{ value: props.selectedYear }}
+              setYearRange={(obj) => {
+                if (typeof props.setSelectedYear === 'function') props.setSelectedYear(obj.value);
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
