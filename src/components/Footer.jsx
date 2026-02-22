@@ -1,18 +1,52 @@
-function Footer(props) {
+// Footer component with copyright and GitHub link
+function Footer() {
     return (
-    <footer class="bg-white dark:bg-gray-900">
-    <div class="mx-auto max-w-7xl space-y-8 px-4 py-4 sm:px-6 lg:space-y-16 lg:px-8">
-
-        <div class="flex items-center justify-between">
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+    <footer className="bg-white dark:bg-gray-900">
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-4 sm:px-6 lg:space-y-16 lg:px-8">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             2026, Niklas Eckert, CASA0028, UCL
           </p>
-          <a href="https://github.com/eckertniklasm/casa0028-coursework1" rel="noreferrer" target="_blank" class="text-gray-700 transition hover:opacity-75 dark:text-gray-200">
-            <span class="sr-only">GitHub</span>
-            <svg class="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-          </a>
+          <div className="flex items-center gap-4">
+            {/* GitHub link */}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                GitHub:
+            </p>
+            <a href="https://github.com/eckertniklasm/casa0028-coursework1" rel="noreferrer" target="_blank" className="text-gray-700 transition hover:opacity-75 dark:text-gray-200">
+              <span className="sr-only">GitHub</span>
+              <svg className="size-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+            </a>
+            {/* Data source links */}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Population Data:
+            </p>
+            <a href="https://data.london.gov.uk/dataset/office-for-national-statistics-ons-population-estimates-borough--vd615/" rel="noreferrer" target="_blank" className="text-gray-700 transition hover:opacity-75 dark:text-gray-200" title="Population Data">
+              <span className="sr-only">Population Data</span>
+              <svg className="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </a>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Borough Boundaries:
+            </p>
+            <a href="https://gis-tfl.opendata.arcgis.com/datasets/london-boroughs-1/about" rel="noreferrer" target="_blank" className="text-gray-700 transition hover:opacity-75 dark:text-gray-200" title="Borough Boundaries">
+              <span className="sr-only">Borough Boundaries</span>
+              <svg className="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </a>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Rent Data:
+            </p>
+            <a href="https://data.london.gov.uk/dataset/local-authority-average-rents-2g1k1" rel="noreferrer" target="_blank" className="text-gray-700 transition hover:opacity-75 dark:text-gray-200" title="Rent Data">
+              <span className="sr-only">Rent Data</span>
+              <svg className="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </a>
+          </div>
         </div>
     </div>
     </footer>

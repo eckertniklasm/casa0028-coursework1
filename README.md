@@ -4,3 +4,4 @@ https://data.london.gov.uk/dataset/office-for-national-statistics-ons-population
 
 https://gis-tfl.opendata.arcgis.com/datasets/london-boroughs-1/about
 
+https://data.london.gov.uk/dataset/local-authority-average-rents-2g1k1

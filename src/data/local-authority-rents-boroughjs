@@ -1,0 +1,3 @@
+import RentData from "./local-authority-rents-borough.json";
+
+export default RentData;

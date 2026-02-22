@@ -1,67 +1,88 @@
 import { useState, useMemo } from 'react';
-import MapGL, { Source, Layer, Popup } from 'react-map-gl/maplibre';
+import MapGL, { Source, Layer } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { boroughsData } from '../data/London_Boroughs';
 import populationData from '../data/ons-mye-population-totals.js';
+import rentData from '../data/local-authority-rents-boroughjs';
 
+// Interactive map component displaying London boroughs with choropleth visualization
 function MapDisplay(props) {
   const [hoveredBorough, setHoveredBorough] = useState(null);
 
   const boroughsWithPop = useMemo(() => {
-    if (!Array.isArray(populationData) || populationData.length === 0) return boroughsData;
+    // Select data source based on metric type
+    const isRent = props.metric === 'rent';
+    const dataSource = isRent ? rentData : populationData;
+    if (!Array.isArray(dataSource) || dataSource.length === 0) return boroughsData;
 
     // Year to use
     const year = String(props.selectedYear ?? 2015);
 
-    // Build lookup: area name -> numeric population for the chosen year
+    // Build lookup: area name -> numeric metric value for the chosen year
     const popLookup = new Map();
-    populationData.forEach((row) => {
-      const area = row['Area name']?.trim();
+    dataSource.forEach((row) => {
+      const area = (row['Area name'] || row['Area name'])?.trim();
       if (!area) return;
       const valueRaw = row[year];
       if (valueRaw === undefined || valueRaw === null) return;
-      const numeric = Number(String(valueRaw).replace(/[’']/g, '').replace(/,/g, ''));
+      const cleaned = String(valueRaw).replace(/[’' ]/g, '').replace(/,/g, '');
+      if (cleaned === '.' || cleaned === '') return;
+      const numeric = Number(cleaned);
       if (Number.isNaN(numeric)) return;
       popLookup.set(area, numeric);
     });
 
-    // Clone GeoJSON and attach POP2015 property where available
+    // Clone GeoJSON and attach computed metric property where available
     const copy = JSON.parse(JSON.stringify(boroughsData));
     copy.features.forEach((f) => {
       const area = (f.properties?.BOROUGH || f.properties?.NAME || f.properties?.name || '').trim();
-      const pop = popLookup.get(area);
+      const val = popLookup.get(area);
       f.properties = f.properties || {};
-      f.properties.POP2015 = typeof pop === 'number' ? pop : null;
+      if (typeof val === 'number') {
+        f.properties.METRIC_VALUE = val;
+      } else {
+        // ensure property is absent when no value
+        if (Object.prototype.hasOwnProperty.call(f.properties, 'METRIC_VALUE')) {
+          delete f.properties.METRIC_VALUE;
+        }
+      }
     });
 
     return copy;
-  }, [props.selectedYear]);
+  }, [props.selectedYear, props.metric]);
 
   const colorExpression = useMemo(() => {
     // compute min/max across features
     const values = (boroughsWithPop.features || [])
-      .map((f) => f.properties?.POP2015)
+      .map((f) => f.properties?.METRIC_VALUE)
       .filter((v) => typeof v === 'number');
-    if (values.length === 0) return '#eeeeee';
+    if (values.length === 0) return '#6b7280';
     const min = Math.min(...values);
     const max = Math.max(...values);
+    const isRent = props.metric === 'rent';
+    const light = isRent ? '#fff5f0' : '#f7fbff';
+    const dark = isRent ? '#a50f15' : '#08306b';
 
     if (min === max) {
-      // single color for all
-      return ['case', ['==', ['get', 'POP2015'], null], '#f0f0f0', '#08306b'];
+      // single color for all; gray for missing
+      return ['case', ['!', ['has', 'METRIC_VALUE']], '#6b7280', dark];
     }
 
-    // interpolate from light to dark blue
+    // If METRIC_VALUE is missing -> show gray, otherwise interpolate from light to dark
     return [
-      'interpolate', ['linear'], ['coalesce', ['get', 'POP2015'], 0],
-      min, '#f7fbff',
-      max, '#08306b'
+      'case',
+      ['!', ['has', 'METRIC_VALUE']],
+      '#6b7280',
+      ['interpolate', ['linear'], ['get', 'METRIC_VALUE'],
+        min, light,
+        max, dark
+      ]
     ];
-  }, [boroughsWithPop]);
+  }, [boroughsWithPop, props.metric]);
 
   const minMax = useMemo(() => {
     const values = (boroughsWithPop.features || [])
-      .map((f) => f.properties?.POP2015)
+      .map((f) => f.properties?.METRIC_VALUE)
       .filter((v) => typeof v === 'number');
     if (values.length === 0) return null;
     return { min: Math.min(...values), max: Math.max(...values) };
@@ -132,7 +153,7 @@ function MapDisplay(props) {
           {minMax ? (
             <>
               <span className="text-xs text-gray-600">{minMax.min.toLocaleString()}</span>
-              <div className="w-48 h-3 rounded" style={{ background: 'linear-gradient(90deg, #f7fbff, #08306b)' }} />
+              <div className="w-48 h-3 rounded" style={{ background: `linear-gradient(90deg, ${props.metric === 'rent' ? '#fff5f0' : '#f7fbff'}, ${props.metric === 'rent' ? '#a50f15' : '#08306b'})` }} />
               <span className="text-xs text-gray-600">{minMax.max.toLocaleString()}</span>
             </>
           ) : (
